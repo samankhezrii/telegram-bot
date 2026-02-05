@@ -19,7 +19,7 @@ if not firebase_key_json:
 
 cred = credentials.Certificate(json.loads(firebase_key_json))
 initialize_app(cred, {
-    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # آدرس پروژه Firebase
+    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'
 })
 
 # ------------------------------
@@ -45,15 +45,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------------------
 # مدیریت پیام‌ها و ارسال عکس از Firebase/Google Drive
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()  # متن وارد شده توسط کاربر
-    ref = db.reference("/")             # 🔹 استفاده مستقیم از root دیتابیس
-    data = ref.child(text).get()        # بررسی Key در Firebase
+    text = update.message.text.strip()
+    ref = db.reference("/")  # 🔹 Root دیتابیس
+    data = ref.child(text).get()
 
     if data:
-        # ارسال عکس از URL Google Drive (Value همان لینک است)
         await update.message.reply_photo(data)
     else:
-        # بررسی دستورات منو
         if text == "📋 اطلاعات من":
             user = update.effective_user
             await update.message.reply_text(
@@ -73,5 +71,18 @@ app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-print("Bot is running...")
-app.run_polling()
+# ------------------------------
+# 🔹 Webhook setup برای Railway
+PORT = int(os.environ.get("PORT", "8443"))
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")  # لینک عمومی ریلوی شما
+
+if not WEBHOOK_URL:
+    raise ValueError("Environment variable WEBHOOK_URL not set!")
+
+print("Bot is running with Webhook...")
+app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    url_path=TOKEN,
+    webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
+)
