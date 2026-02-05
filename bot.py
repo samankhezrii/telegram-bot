@@ -1,39 +1,35 @@
 import os
-import json
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from datetime import datetime
-from firebase_admin import credentials, initialize_app, db
 
-# ------------------------------
-# 🔹 توکن ربات از Environment Variable
+# 🔹 Firebase
+import firebase_admin
+from firebase_admin import credentials, db
+
+# ✅ توکن از Environment Variable
 TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     raise ValueError("Environment variable BOT_TOKEN not set!")
 
-# ------------------------------
-# 🔹 Firebase از Environment Variable
-firebase_key_json = os.getenv("FIREBASE_KEY")
-if not firebase_key_json:
-    raise ValueError("Environment variable FIREBASE_KEY not set!")
-
-cred = credentials.Certificate(json.loads(firebase_key_json))
-initialize_app(cred, {
-    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'
+# 🔹 Firebase initialization
+# کلید Firebase که از کنسول دانلود کردی
+cred = credentials.Certificate("firebase_key.json")
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # آدرس پروژه Firebase
 })
 
-# ------------------------------
-# 🔹 دکمه‌ها و منو
+# 🔹 دکمه‌های منو
 keyboard = [
     ["📋 اطلاعات من", "🕒 ساعت"],
     ["❓ راهنما"]
 ]
 reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-INFO_URL = "https://example.com/info"      # جایگزین لینک واقعی خودت
-HELP_URL = "https://example.com/help"      # جایگزین لینک واقعی خودت
+# URLها یا لینک‌های مفید
+INFO_URL = "https://example.com/info"  # جایگزین لینک واقعی خودت
+HELP_URL = "https://example.com/help"  # جایگزین لینک واقعی خودت
 
-# ------------------------------
 # دستور /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user.first_name
@@ -42,16 +38,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# ------------------------------
 # مدیریت پیام‌ها و ارسال عکس از Firebase/Google Drive
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    ref = db.reference("/")  # 🔹 Root دیتابیس
-    data = ref.child(text).get()
+    text = update.message.text.strip()  # اسم وارد شده توسط کاربر
+    ref = db.reference("/")  # مسیر اصلی در Firebase
+
+    data = ref.child(text).get()  # بررسی اینکه Key وجود دارد یا خیر
 
     if data:
+        # ارسال عکس از URL Google Drive
         await update.message.reply_photo(data)
     else:
+        # بررسی دستورات منو
         if text == "📋 اطلاعات من":
             user = update.effective_user
             await update.message.reply_text(
@@ -65,24 +63,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("عکسی برای این اسم پیدا نشد 😅")
 
-# ------------------------------
 # ساخت اپلیکیشن و Handlerها
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# ------------------------------
-# 🔹 Webhook setup برای Railway
-PORT = int(os.environ.get("PORT", "8443"))
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")  # لینک عمومی ریلوی شما
-
-if not WEBHOOK_URL:
-    raise ValueError("Environment variable WEBHOOK_URL not set!")
-
-print("Bot is running with Webhook...")
-app.run_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    url_path=TOKEN,
-    webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
-)
+print("Bot is running...")
+app.run_polling()
