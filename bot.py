@@ -19,7 +19,7 @@ if not firebase_key_json:
 
 cred = credentials.Certificate(json.loads(firebase_key_json))
 initialize_app(cred, {
-    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # آدرس پروژه Firebase
+    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # جایگزین با پروژه Firebase خودت
 })
 
 # ------------------------------
