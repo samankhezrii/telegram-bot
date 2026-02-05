@@ -19,7 +19,7 @@ if not firebase_key_json:
 
 cred = credentials.Certificate(json.loads(firebase_key_json))
 initialize_app(cred, {
-    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # جایگزین با پروژه Firebase خودت
+    'databaseURL': 'https://mirawater-d7e49-default-rtdb.firebaseio.com/'  # آدرس پروژه Firebase
 })
 
 # ------------------------------
@@ -45,15 +45,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------------------
 # مدیریت پیام‌ها و ارسال عکس از Firebase/Google Drive
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()  # اسم وارد شده توسط کاربر
-    ref = db.reference("images")        # مسیر Key ها در Firebase
+    text = update.message.text.strip()  # متن وارد شده توسط کاربر
+    ref = db.reference("/")             # 🔹 استفاده مستقیم از root دیتابیس
     data = ref.child(text).get()        # بررسی Key در Firebase
 
-    if data and "url" in data:
-        # ارسال عکس از لینک Google Drive
-        await update.message.reply_photo(data["url"])
+    if data:
+        # ارسال عکس از URL Google Drive (Value همان لینک است)
+        await update.message.reply_photo(data)
     else:
-        # بررسی سایر دستورات منو
+        # بررسی دستورات منو
         if text == "📋 اطلاعات من":
             user = update.effective_user
             await update.message.reply_text(
