@@ -6,4 +6,4 @@ httpx==0.28.1
 idna==3.11
 python-telegram-bot==22.6
 typing_extensions==4.15.0
-firebase-admin==6.1.1
+firebase-admin==7.5.0
